@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Smart Traffic Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg1: #0e2138; --bg2: #0b1a2d; --panel: #142c4a; --panel2: #183554; --text: #eaf3ff; --muted: #a8bed6;
+            --accent: #22c55e; --warn: #f59e0b; --danger: #ef4444; --emg-color:#8e24aa;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 30% 0%, #16365d 0%, #0f2742 60%), linear-gradient(180deg, var(--bg1), var(--bg2));
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+        .app {
+            width: min(1400px, 96vw);
+            margin: 20px auto;
+            background: linear-gradient(180deg, var(--panel), #0f2542);
+            border-radius: 18px;
+            box-shadow: 0 18px 48px rgba(0,0,0,.35);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,.06);
+            display: grid;
+            grid-template-columns: 1fr 320px;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            text-align: center;
+            background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+        }
+        .title {
+            font-size: clamp(22px, 3.4vw, 34px);
+            font-weight: 800;
+            letter-spacing: .4px;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: clamp(12px, 1.6vw, 14px);
+            margin-top: 6px;
+        }
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--panel2);
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn {
+            appearance: none;
+            border: 0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 700;
+            background: #1e3b61;
+            color: #e6f0fb;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25) inset, 0 6px 18px rgba(0,0,0,.25);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,.06);
+        }
+        .btn.primary {
+            background: linear-gradient(180deg, #2f7a39, #1b5e20);
+            border-color: rgba(34,197,94,.35);
+        }
+        .btn.warn {
+            background: linear-gradient(180deg, #d97706, #b45309);
+            border-color: rgba(245,158,11,.35);
+        }
+        .btn.danger {
+            background: linear-gradient(180deg, #b91c1c, #7f1d1d);
+            border-color: rgba(239,68,68,.35);
+        }
+        .btn.emg {
+            background: linear-gradient(180deg, #9c27b0, #7b1fa2);
+            border-color: rgba(142,36,170,.35);
+        }
+        .clock {
+            font-variant-numeric: tabular-nums;
+            font-weight: 800;
+            color: #eaf3ff;
+            justify-self: end;
+        }
+        .clock small {
+            color: var(--muted);
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .stage-wrap {
+            padding: clamp(10px, 2.3vw, 18px);
+            flex: 1;
+        }
+        .stage {
+            aspect-ratio: 16/9;
+            width: 100%;
+            background: #0a1e35;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), inset 0 30px 80px rgba(0,0,0,.35);
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .legend {
+            position: absolute;
+            left: 12px;
+            bottom: 10px;
+            color: #cdd9ec;
+            font-size: 12px;
+            opacity: .9;
+            background: rgba(0,0,0,.35);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        
+        /* Dashboard styles */
+        .dashboard {
+            background: var(--panel2);
+            border-left: 1px solid rgba(255,255,255,.08);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+        .dashboard-section {
+            background: rgba(0,0,0,.2);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.06);
+        }
+        .dashboard-title {
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dashboard-title svg {
+            width: 18px;
+            height: 18px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-item {
+            background: rgba(0,0,0,.25);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-weight: 800;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .signal-status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .signal-direction {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .signal-state {
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .signal-state.green { color: var(--accent); }
+        .signal-state.yellow { color: var(--warn); }
+        .signal-state.red { color: var(--danger); }
+        .vehicle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .vehicle-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,.15);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .vehicle-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .emergency-active {
+            animation: siren 1s infinite;
+        }
+        @keyframes siren {
+            0% { background-color: rgba(239, 68, 68, 0.2); }
+            50% { background-color: rgba(59, 130, 246, 0.2); }
+            100% { background-color: rgba(239, 68, 68, 0.2); }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <div class="main-content">
+            <header>
+                <div class="title">SMART TRAFFIC MANAGEMENT SYSTEM</div>
+                <div class="subtitle">Realistic four-way intersection • Signals inside each approach • Straight / Left / Right • Collision avoidance</div>
+            </header>
+            <section class="toolbar">
+                <div class="btns">
+                    <button id="startBtn" class="btn primary">Start System</button>
+                    <button id="addBtn" class="btn">Add Vehicle</button>
+                    <button id="addEmergencyBtn" class="btn danger">Add Emergency</button>
+                    <button id="removeBtn" class="btn">Remove Last</button>
+                    <button id="clearBtn" class="btn warn">Clear All</button>
+                    <button id="emgBtn" class="btn danger">Emergency All-Red</button>
+                </div>
+                <div class="clock" id="clock">00:00:00 <small>IST</small></div>
+            </section>
+            <div class="stage-wrap">
+                <div class="stage">
+                    <canvas id="view"></canvas>
+                    <div class="legend">Conflicts guarded by movement-based reservations • Headway control per approach</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Traffic Monitoring Dashboard -->
+        <aside class="dashboard">
+            <div class="dashboard-section">
+                <div class="dashboard-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                    Traffic Overview
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="vehicleCount">0</div>
+                        <div class="stat-label">Total Vehicles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="emergencyCount">0</div>
+                        <div class="stat-label">Emergency Vehicles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="throughput">0</div>
+                        <div class="stat-label">Vehicles/Hour</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgWait">0s</div>
+                        <div class="stat-label">Avg Wait Time</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-section">
+                <div class="dashboard-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                    Signal Status
+                </div>
+                <div class="signal-status">
+                    <span class="signal-direction">North-South:</span>
+                    <span class="signal-state" id="nsSignal">RED</span>
+                </div>
+                <div class="signal-status">
+                    <span class="signal-direction">East-West:</span>
+                    <span class="signal-state" id="ewSignal">GREEN</span>
+                </div>
+                <div class="signal-status">
+                    <span class="signal-direction">Cycle Time:</span>
+                    <span id="cycleTime">0s</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-section">
+                <div class="dashboard-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 0 0 1-2 2H5a2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Recent Vehicles
+                </div>
+                <div class="vehicle-list" id="vehicleList">
+                    <div class="vehicle-item">No vehicles yet</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-section">
+                <div class="dashboard-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    System Status
+                </div>
+                <div class="signal-status">
+                    <span>Collision Avoidance:</span>
+                    <span id="collisionStatus">Active</span>
+                </div>
+                <div class="signal-status">
+                    <span>Emergency Mode:</span>
+                    <span id="emergencyModeStatus">Inactive</span>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        /* ===== Canvas sizing ===== */
+        const canvas = document.getElementById('view');
+        const ctx = canvas.getContext('2d');
+        
+        function resize() {
+            const r = canvas.parentElement.getBoundingClientRect();
+            const dpr = Math.min(devicePixelRatio || 1, 2);
+            canvas.width = r.width * dpr;
+            canvas.height = r.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        addEventListener('resize', resize);
+        resize();
+
+        /* ===== Layout helpers ===== */
+        function L() {
+            const w = canvas.clientWidth, h = canvas.clientHeight, cx = w/2, cy = h/2;
+            const arm = Math.min(w, h) * 0.24; // road width
+            const lane = arm / 3;
+            const curb = Math.max(16, arm * 0.26);
+            const box = arm; // center box size
+            const stop = 18; // stop line setback from box
+            
+            return {w, h, cx, cy, arm, lane, curb, stop, cross: {x: cx-box/2, y: cy-box/2, w: box, h: box}};
+        }
+
+        /* ===== Signal controller ===== */
+        const cycle = { green: 8, yellow: 2, red: 8 };
+        let running = false, emergency = false, tCycle = 0;
+        let NS = 'RED', EW = 'GREEN'; // EW starts green so you see both
+        
+        function updateSignals(dt) {
+            if (!running) return;
+            if (emergency) {
+                NS = EW = 'RED';
+                return;
+            }
+            
+            tCycle += dt;
+            const T = cycle.green + cycle.yellow + cycle.red;
+            const t = tCycle % T;
+            
+            if (t < cycle.green) {
+                NS = 'GREEN';
+                EW = 'RED';
+            } else if (t < cycle.green + cycle.yellow) {
+                NS = 'YELLOW';
+                EW = 'RED';
+            } else {
+                NS = 'RED';
+                EW = 'GREEN';
+            }
+            
+            // Update dashboard
+            document.getElementById('nsSignal').textContent = NS;
+            document.getElementById('nsSignal').className = 'signal-state ' + NS.toLowerCase();
+            document.getElementById('ewSignal').textContent = EW;
+            document.getElementById('ewSignal').className = 'signal-state ' + EW.toLowerCase();
+            document.getElementById('cycleTime').textContent = Math.round(tCycle % T) + 's';
+        }
+
+        /* ===== Vehicles & paths ===== */
+        const cars = [];
+        const MAX_SPEED = 100, ACCEL = 140, BRAKE = 260;
+        const EMERGENCY_SPEED = 120; // Emergency vehicles are faster
+        
+        // Track vehicles that have passed through for throughput calculation
+        let vehiclesPassed = 0;
+        let simulationStartTime = Date.now();
+        let totalWaitTime = 0;
+        let completedVehicles = 0;
+
+        function pick(a) {
+            return a[Math.floor(Math.random() * a.length)];
+        }
+        
+        function pickWeighted(items) {
+            const sum = items.reduce((s, [, w]) => s + w, 0);
+            let r = Math.random() * sum;
+            for (const [val, w] of items) {
+                if ((r -= w) <= 0) return val;
+            }
+            return items[0][0];
+        }
+        
+        // Public API used by buttons:
+        function spawnVehicle(isEmergency = false) {
+            const side = pick(['N', 'S', 'E', 'W']);
+            const move = pickWeighted([['S', 0.5], ['R', 0.25], ['L', 0.25]]);
+            
+            let color, type, siren;
+            if (isEmergency) {
+                type = 'Emergency';
+                color = pick(['#ff3333', '#ff6600', '#0000ff']); // Red, Orange, Blue for emergency
+                siren = true;
+            } else {
+                type = 'Car';
+                color = pick(['#d32f2f', '#1565c0', '#2e7d32', '#6a1b9a', '#f57f17', '#546e7a', '#8d6e63', '#00897b']);
+                siren = false;
+            }
+            
+            const { path } = buildPath(side, move);
+            const id = `veh-${Math.floor(Math.random() * 99999)}`;
+            cars.push({
+                id: id,
+                from: side,
+                route: move,
+                path,
+                s: 0, // progress along path (0 to 1)
+                v: 0, // current velocity
+                target: (isEmergency ? EMERGENCY_SPEED : MAX_SPEED) * (0.6 + Math.random() * 0.3), // desired speed
+                len: isEmergency ? 48 : 36, // length of vehicle
+                width: isEmergency ? 22 : 18, // width of vehicle
+                color,
+                type,
+                siren,
+                state: 'approach', // 'approach', 'in', 'out'
+                reserved: false, // if it has a reservation for the intersection
+                waitTime: 0, // accumulated wait time at intersection
+                isEmergency: isEmergency,
+                hasCrossedSignal: false // New flag to track if vehicle has passed the signal
+            });
+            
+            updateDashboard();
+        }
+        
+        function removeLast() {
+            if (cars.length) {
+                const removed = cars.pop();
+                if (removed.reserved) {
+                    occ.delete(groupOf(removed));
+                }
+                updateDashboard();
+            }
+        }
+        
+        // Bezier helper:
+        const B = (p0, p1, p2, p3, t) => ({
+            x: (1-t)**3 * p0.x + 3 * (1-t)**2 * t * p1.x + 3 * (1-t) * t**2 * p2.x + t**3 * p3.x,
+            y: (1-t)**3 * p0.y + 3 * (1-t)**2 * t * p1.y + 3 * (1-t) * t**2 * p2.y + t**3 * p3.y
+        });
+        
+        function buildPath(side, move) {
+            const { cx, cy, arm, lane, stop, w, h } = L();
+            const off = lane * 0.55; // running lane center
+            
+            const entry = {
+                N: { x: cx - off, y: -60 },
+                S: { x: cx + off, y: h + 60 },
+                E: { x: w + 60, y: cy - off },
+                W: { x: -60, y: cy + off }
+            };
+            
+            const exit = {
+                N: { x: cx + off, y: -70 },
+                S: { x: cx - off, y: h + 70 },
+                E: { x: w + 70, y: cy + off },
+                W: { x: -70, y: cy - off }
+            };
+            
+            if (move === 'S') { // straight
+                const p0 = entry[side];
+                const dest = (side === 'N') ? 'S' : (side === 'S') ? 'N' : (side === 'E') ? 'W' : 'E';
+                const p3 = exit[dest];
+                
+                const path = s => (side === 'N' || side === 'S') 
+                    ? { x: p0.x, y: p0.y + s * (p3.y - p0.y) } 
+                    : { x: p0.x + s * (p3.x - p0.x), y: p0.y };
+                    
+                return { path };
+            }
+            
+            if (move === 'R') { // right turn – tight curve hugging box corner
+                let p0, p1, p2, p3;
+                
+                if (side === 'N') {
+                    p0 = entry.N;
+                    p3 = exit.W;
+                    p1 = { x: p0.x, y: cy - 10 };
+                    p2 = { x: cx - 10, y: cy - 10 };
+                }
+                if (side === 'S') {
+                    p0 = entry.S;
+                    p3 = exit.E;
+                    p1 = { x: p0.x, y: cy + 10 };
+                    p2 = { x: cx + 10, y: cy + 10 };
+                }
+                if (side === 'E') {
+                    p0 = entry.E;
+                    p3 = exit.N;
+                    p1 = { x: cx + 10, y: p0.y };
+                    p2 = { x: cx + 10, y: cy - 10 };
+                }
+                if (side === 'W') {
+                    p0 = entry.W;
+                    p3 = exit.S;
+                    p1 = { x: cx - 10, y: p0.y };
+                    p2 = { x: cx - 10, y: cy + 10 };
+                }
+                
+                const path = s => B(p0, p1, p2, p3, s);
+                return { path };
+            }
+            
+            if (move === 'L') { // left turn – wider arc through center
+                let p0, p1, p2, p3;
+                
+                if (side === 'N') {
+                    p0 = entry.N;
+                    p3 = exit.E;
+                    p1 = { x: p0.x, y: cy - 16 };
+                    p2 = { x: cx + 18, y: cy + 8 };
+                }
+                if (side === 'S') {
+                    p0 = entry.S;
+                    p3 = exit.W;
+                    p1 = { x: p0.x, y: cy + 16 };
+                    p2 = { x: cx - 18, y: cy - 8 };
+                }
+                if (side === 'E') {
+                    p0 = entry.E;
+                    p3 = exit.S;
+                    p1 = { x: cx + 16, y: p0.y };
+                    p2 = { x: cx - 8, y: cy + 18 };
+                }
+                if (side === 'W') {
+                    p0 = entry.W;
+                    p3 = exit.N;
+                    p1 = { x: cx - 16, y: p0.y };
+                    p2 = { x: cx + 8, y: cy - 18 };
+                }
+                
+                const path = s => B(p0, p1, p2, p3, s);
+                return { path };
+            }
+        }
+
+        /* ===== Movement conflict matrix (reservation groups) ===== 
+        Group id format: "N_S" (from North, Straight) etc.
+        Cars request a reservation when they reach the stop line on GREEN.
+        They may enter only if none of their conflicting groups are occupied. */
+        const occ = new Set(); // occupied groups
+        
+        const conflicts = {
+            // North
+            'N_S': new Set(['S_L', 'E_L', 'W_R']),
+            'N_L': new Set(['S_S', 'S_R', 'E_L', 'W_S', 'W_L']),
+            'N_R': new Set(['W_L']),
+            // South
+            'S_S': new Set(['N_L', 'E_R', 'W_L']),
+            'S_L': new Set(['N_S', 'N_R', 'E_S', 'E_L', 'W_L']),
+            'S_R': new Set(['E_L']),
+            // East
+            'E_S': new Set(['W_L', 'N_R', 'S_L']),
+            'E_L': new Set(['W_S', 'W_R', 'N_L', 'S_S', 'S_L']),
+            'E_R': new Set(['N_L']),
+            // West
+            'W_S': new Set(['E_L', 'N_L', 'S_R']),
+            'W_L': new Set(['E_S', 'E_R', 'N_S', 'S_L', 'S_S']),
+            'W_R': new Set(['S_L'])
+        };
+        
+        function groupOf(c) {
+            return `${c.from}_${c.route}`;
+        }
+        
+        function canReserve(c) {
+            // Emergency vehicles ignore signal reservations
+            if (c.isEmergency) return true;
+            
+            const g = groupOf(c);
+            for (const x of occ) {
+                if (conflicts[g] && conflicts[g].has(x)) return false;
+            }
+            return true;
+        }
+
+        /* ===== Simulation update ===== */
+        const HEADWAY = 0.06; // min s-gap to the car ahead on same approach
+        
+        function nearestAhead(c) {
+            let best = null, bestd = 1e9;
+            for (const o of cars) {
+                // Check only cars on the same approach, ahead of the current car
+                if (o === c || o.from !== c.from) continue;
+                const d = o.s - c.s;
+                if (d > 0 && d < bestd) { // d > 0 means o is ahead of c
+                    bestd = d;
+                    best = o;
+                }
+            }
+            return best;
+        }
+        
+        function updateCars(dt) {
+            const { cx, cy, arm, stop } = L();
+            const emergencyPresent = cars.some(c => c.isEmergency && c.state !== 'out');
+
+            for (const c of cars) {
+                // Get current signal state for car's approach
+                const sig = (c.from === 'N' || c.from === 'S') ? NS : EW;
+                const P = c.path(c.s); // Current position of the car (center)
+                
+                let tgt = c.target; // Desired speed
+                let currentFrontCoord; // X or Y coordinate of the front of the car
+                let stopLineCoord; // X or Y coordinate of the stop line
+                let distToStop; // Distance from front of car to stop line
+
+                // Determine front of car and stop line coordinates based on approach direction
+                if (c.from === 'N') { // Northbound vehicle, moves increasing Y
+                    currentFrontCoord = P.y + c.len / 2;
+                    stopLineCoord = cy - arm / 2 - stop;
+                    distToStop = stopLineCoord - currentFrontCoord; // Positive if front is before stop line
+                } else if (c.from === 'S') { // Southbound vehicle, moves decreasing Y
+                    currentFrontCoord = P.y - c.len / 2;
+                    stopLineCoord = cy + arm / 2 + stop;
+                    distToStop = currentFrontCoord - stopLineCoord; // Positive if front is before stop line
+                } else if (c.from === 'E') { // Eastbound vehicle, moves decreasing X
+                    currentFrontCoord = P.x - c.len / 2;
+                    stopLineCoord = cx + arm / 2 + stop;
+                    distToStop = currentFrontCoord - stopLineCoord; // Positive if front is before stop line
+                } else if (c.from === 'W') { // Westbound vehicle, moves increasing X
+                    currentFrontCoord = P.x + c.len / 2;
+                    stopLineCoord = cx - arm / 2 - stop;
+                    distToStop = stopLineCoord - currentFrontCoord; // Positive if front is before stop line
+                }
+
+                // --- Emergency Vehicle Priority ---
+                if (c.isEmergency) {
+                    tgt = c.target; // Emergency vehicles always try to move at their target speed
+                    // Emergency vehicles also hold their own reservation (implicitly handled by canReserve returning true)
+                    if (c.state === 'approach' && distToStop <= 0 && !c.reserved) {
+                        c.reserved = true;
+                        c.state = 'in';
+                        occ.add(groupOf(c));
+                    }
+                } else if (emergencyPresent) {
+                    // Non-emergency vehicles stop for emergency vehicles
+                    tgt = 0;
+                    if (c.v < 5 && distToStop > -c.len) { // Check if effectively stopped near intersection
+                        c.waitTime += dt;
+                    }
+                } else {
+                    // --- Normal Traffic Signal Logic ---
+                    if (c.state === 'approach' && !c.hasCrossedSignal) {
+                        if (sig === 'RED') {
+                            if (distToStop > -5) { // If car's front is before or slightly past stop line
+                                tgt = 0; // Stop
+                                c.waitTime += dt;
+                            }
+                        } else if (sig === 'YELLOW') {
+                            if (distToStop > 10) { // If still far enough from the stop line
+                                tgt = 0; // Stop for yellow
+                                c.waitTime += dt;
+                            } else {
+                                // If already very close to or crossing the stop line on yellow, proceed
+                                if (distToStop <= 10 && distToStop > -c.len) {
+                                    if (!c.reserved && canReserve(c)) {
+                                        c.reserved = true;
+                                        c.state = 'in';
+                                        occ.add(groupOf(c));
+                                        c.hasCrossedSignal = true;
+                                    } else if (c.reserved) {
+                                        c.hasCrossedSignal = true; // Already inside intersection
+                                    } else {
+                                        tgt = 0; // Can't reserve, stop
+                                        c.waitTime += dt;
+                                    }
+                                }
+                            }
+                        } else if (sig === 'GREEN') {
+                            if (distToStop <= 0 && !c.reserved) { // At or just passed stop line
+                                if (canReserve(c)) {
+                                    c.reserved = true;
+                                    c.state = 'in';
+                                    occ.add(groupOf(c));
+                                    c.hasCrossedSignal = true;
+                                } else {
+                                    tgt = 0; // Cannot reserve (conflict), wait
+                                    c.waitTime += dt;
+                                }
+                            }
+                        }
+                    } else if (c.state === 'in' || c.state === 'out') {
+                        // Vehicle is in or past the intersection, ignore signals
+                        tgt = c.target;
+                    }
+                }
+
+                // --- Headway (Queueing) Logic ---
+                const ahead = nearestAhead(c);
+                if (ahead) {
+                    // The 's' value represents progress along the path (0 to 1).
+                    // We want to maintain a physical distance.
+                    // A car's length is in pixels. The path length is 'nominal' (540 units).
+                    // So, HEADWAY needs to consider vehicle length on the path.
+                    const requiredGap_s = (c.len + 10) / 540; // Convert pixel length + buffer to 's' units
+                    if (ahead.s - c.s < requiredGap_s) {
+                        // Adjust target speed to match the car ahead, but always allow braking
+                        tgt = Math.min(tgt, Math.max(0, ahead.v - 20));
+                    }
+                }
+
+                // Update actual velocity based on target speed, acceleration, and braking
+                if (c.v < tgt) c.v = Math.min(tgt, c.v + ACCEL * dt);
+                else if (c.v > tgt) c.v = Math.max(tgt, c.v - BRAKE * dt);
+
+                // Update car's progress along its path
+                const nominalPathLength = 540; // This is a scaling factor for 's'
+                c.s += (c.v * dt) / nominalPathLength;
+
+                // --- State Transitions and Reservation Release ---
+                if (c.state === 'in') {
+                    const Q = c.path(c.s); // Current position while in intersection
+                    // Check if the car has exited the central intersection area
+                    if (Math.hypot(Q.x - cx, Q.y - cy) > arm * 0.85) {
+                        if (c.reserved) {
+                            occ.delete(groupOf(c)); // Release reservation
+                        }
+                        c.reserved = false;
+                        c.state = 'out';
+                    }
+                }
+
+                // Mark car as done if it has passed the end of its path
+                if (c.s > 1.02) {
+                    if (c.reserved) { // Ensure reservation is released if car finishes early
+                        occ.delete(groupOf(c));
+                    }
+                    c.done = true;
+                    vehiclesPassed++;
+                    totalWaitTime += c.waitTime;
+                    completedVehicles++;
+                }
+            }
+            
+            // Clean up finished cars
+            for (let i = cars.length - 1; i >= 0; i--) {
+                if (cars[i].done) cars.splice(i, 1);
+            }
+            
+            updateDashboard(); // Refresh dashboard with latest stats
+        }
+
+        /* ===== Drawing ===== */
+        function drawScene() {
+            const { w, h, cx, cy, arm, curb, cross, lane, stop } = L();
+            ctx.clearRect(0, 0, w, h);
+            
+            // Grass background
+            ctx.fillStyle = '#2a5a3e';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Curbs around the edges
+            ctx.fillStyle = '#c9d1da';
+            ctx.fillRect(0, 0, w, curb);
+            ctx.fillRect(0, h - curb, w, curb);
+            ctx.fillRect(0, 0, curb, h);
+            ctx.fillRect(w - curb, 0, curb, h);
+            
+            // Asphalt for roads (vertical and horizontal segments)
+            const g = ctx.createLinearGradient(0, 0, 0, arm);
+            g.addColorStop(0, '#545a62');
+            g.addColorStop(1, '#3f454d');
+            ctx.fillStyle = g;
+            ctx.fillRect(cx - arm/2, 0, arm, h); // vertical road
+            ctx.fillRect(0, cy - arm/2, w, arm); // horizontal road
+            
+            // Central intersection box
+            ctx.fillStyle = '#5a616a';
+            ctx.fillRect(cross.x, cross.y, cross.w, cross.h);
+            
+            // Lane center markings (dashed yellow lines)
+            ctx.setLineDash([14, 12]);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffd95a';
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, cy - arm/2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy + arm/2); ctx.lineTo(cx, h); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(cx - arm/2, cy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + arm/2, cy); ctx.lineTo(w, cy); ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+            
+            // Stop lines (white solid lines before the intersection)
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(cx - arm/2 + 10, cy - cross.h/2 - 8, arm - 20, 5); // north stop line
+            ctx.fillRect(cx - arm/2 + 10, cy + cross.h/2 + 3, arm - 20, 5); // south stop line
+            ctx.fillRect(cx - cross.w/2 - 8, cy - arm/2 + 10, 5, arm - 20); // west stop line
+            ctx.fillRect(cx + cross.w/2 + 3, cy - arm/2 + 10, 5, arm - 20); // east stop line
+            
+            // Zebra crossings (pedestrian crossings)
+            zebra(cx - arm/2 + 16, cy - cross.h/2 - 22, arm - 32, 12, false); // north pedestrian
+            zebra(cx - arm/2 + 16, cy + cross.h/2 + 8, arm - 32, 12, false); // south pedestrian
+            zebra(cx - cross.w/2 - 22, cy - arm/2 + 16, 12, arm - 32, true); // west pedestrian
+            zebra(cx + cross.w/2 + 8, cy - arm/2 + 16, 12, arm - 32, true); // east pedestrian
+            
+            // Traffic Signals
+            drawSignal(cx - (arm * 0.22), cy - cross.h/2 - 16, NS, false); // North signal
+            drawSignal(cx + (arm * 0.22) - 26, cy + cross.h/2 + 16, NS, true); // South signal (rotated)
+            drawSignal(cx - cross.w/2 - 16, cy - (arm * 0.22), EW, true); // West signal (rotated)
+            drawSignal(cx + cross.w/2 + 16, cy + (arm * 0.22) - 26, EW, false); // East signal
+
+            // Draw all cars
+            for (const c of cars) {
+                drawCar(c);
+            }
+        }
+        
+        function zebra(x, y, w, h, vertical) {
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            const step = 14; // Spacing between white stripes
+            const n = vertical ? Math.floor(h/step) : Math.floor(w/step); // Number of stripes
+            
+            for (let i = 0; i < n; i++) {
+                if (vertical) {
+                    ctx.fillRect(x, y + i * step, w * 0.78, step * 0.55); // Vertical stripes
+                } else {
+                    ctx.fillRect(x + i * step, y, step * 0.55, h * 0.78); // Horizontal stripes
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawSignal(x, y, state, horizontal) {
+            ctx.save();
+            ctx.fillStyle = '#1f242b';
+            
+            // Draw pole for the signal
+            if (!horizontal) {
+                ctx.fillRect(x-3, y-18, 6, 36); // Vertical pole
+                ctx.beginPath(); ctx.arc(x, y+20, 8, 0, Math.PI*2); ctx.fill(); // Base
+            } else {
+                ctx.fillRect(x-18, y-3, 36, 6); // Horizontal pole
+                ctx.beginPath(); ctx.arc(x+20, y, 8, 0, Math.PI*2); ctx.fill(); // Base
+            }
+            
+            // Draw the housing for the lights
+            ctx.fillStyle = '#10141b';
+            roundRect(x-12, y-14, 84, 28, 12, true, false);
+            ctx.strokeStyle = 'rgba(255,255,255,.08)';
+            ctx.stroke();
+            
+            // Define the three lamps (Red, Yellow, Green)
+            const lamps = [['RED', '#ff4d4d'], ['YELLOW', '#ffd659'], ['GREEN', '#39e27d']];
+            lamps.forEach((L, i) => {
+                const cx = x - 12 + 18 + i * 24; // X position for each lamp
+                const cy = y; // Y position for lamps
+                const on = (state === L[0]); // Check if this lamp should be "on"
+                
+                // Bezel (outer ring of the lamp)
+                ctx.fillStyle = '#0c1118';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Lens (inner light)
+                ctx.beginPath();
+                ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+                ctx.fillStyle = on ? L[1] : '#2c3340'; // Light color if on, dark grey if off
+                ctx.shadowColor = on ? L[1] : 'transparent'; // Glow effect if on
+                ctx.shadowBlur = on ? 14 : 0;
+                ctx.fill();
+                
+                // Gloss effect for a more realistic look
+                if (on) {
+                    ctx.globalAlpha = .25;
+                    ctx.beginPath();
+                    ctx.arc(cx - 3, cy - 3, 4.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            });
+            ctx.restore();
+        }
+
+        // Helper function to draw rounded rectangles
+        function roundRect(x, y, w, h, r, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        function drawCar(c) {
+            // Calculate current position and angle based on path progress
+            const P = c.path(Math.min(1, Math.max(0, c.s)));
+            const eps = 0.001, P2 = c.path(Math.min(1, c.s + eps)), ang = Math.atan2(P2.y - P.y, P2.x - P.x) + Math.PI / 2;
+            ctx.save();
+            ctx.translate(P.x, P.y);
+            ctx.rotate(ang);
+            const W = c.width, H = c.len;
+
+            // Draw shadow
+            ctx.globalAlpha = .25;
+            ctx.fillStyle = '#000';
+            roundRect(-W / 2, -H / 2 + 2, W, H, 6, true, false);
+            ctx.globalAlpha = 1;
+
+            // Draw car body with gradient
+            const grad = ctx.createLinearGradient(0, -H / 2, 0, H / 2);
+            grad.addColorStop(0, lighten(c.color, .25));
+            grad.addColorStop(1, darken(c.color, .18));
+            ctx.fillStyle = grad;
+            roundRect(-W / 2, -H / 2, W, H, 6, true, false);
+
+            // Draw windows
+            ctx.fillStyle = 'rgba(200,230,255,.88)';
+            roundRect(-W * 0.36, -H * 0.26, W * 0.72, H * 0.48, 4, true, false);
+
+            // Draw wheels
+            ctx.fillStyle = '#1f1f1f';
+            ctx.fillRect(-W / 2 - 2, -H / 2 + 6, 4, 12);
+            ctx.fillRect(W / 2 - 2, -H / 2 + 6, 4, 12);
+            ctx.fillRect(-W / 2 - 2, H / 2 - 18, 4, 12);
+            ctx.fillRect(W / 2 - 2, H / 2 - 18, 4, 12);
+
+            ctx.restore();
+        }
+
+        // Helper function to lighten a hex color
+        function lighten(hex, p) {
+            const c = parseInt(hex.slice(1), 16);
+            let r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+            r = Math.min(255, r + (255 - r) * p);
+            g = Math.min(255, g + (255 - g) * p);
+            b = Math.min(255, b + (255 - b) * p);
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b | 0).toString(16).slice(1);
+        }
+        
+        // Helper function to darken a hex color
+        function darken(hex, p) {
+            const c = parseInt(hex.slice(1), 16);
+            let r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+            r = Math.max(0, r * (1 - p));
+            g = Math.max(0, g * (1 - p));
+            b = Math.max(0, b * (1 - p));
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b | 0).toString(16).slice(1);
+        }
+
+        /* ===== Clock & Dashboard ===== */
+        const clockEl = document.getElementById('clock');
+        const vehicleListEl = document.getElementById('vehicleList');
+
+        function tickClock() {
+            const istDate = new Date();
+            // Adjust UTC time by 5 hours and 30 minutes for IST
+            istDate.setUTCMinutes(istDate.getUTCMinutes() + 330); 
+            const pad = n => String(n).padStart(2, '0');
+            clockEl.innerHTML = `${pad(istDate.getUTCHours())}:${pad(istDate.getUTCMinutes())}:${pad(istDate.getUTCSeconds())} <small>IST</small>`;
+        }
+        setInterval(tickClock, 1000);
+        tickClock(); // Initial call to display time immediately
+
+        function updateDashboard() {
+            const totalVehicles = cars.length;
+            const emergencyVehicles = cars.filter(c => c.isEmergency).length;
+            document.getElementById('vehicleCount').textContent = totalVehicles;
+            document.getElementById('emergencyCount').textContent = emergencyVehicles;
+
+            const timeElapsedInHours = (Date.now() - simulationStartTime) / 3600000;
+            const throughput = timeElapsedInHours > 0 ? (vehiclesPassed / timeElapsedInHours).toFixed(0) : 0;
+            document.getElementById('throughput').textContent = throughput;
+
+            const avgWait = completedVehicles > 0 ? (totalWaitTime / completedVehicles).toFixed(2) : 0;
+            document.getElementById('avgWait').textContent = `${avgWait}s`;
+            
+            document.getElementById('emergencyModeStatus').textContent = emergency ? 'Active' : 'Inactive';
+            document.getElementById('emergencyModeStatus').style.color = emergency ? 'var(--danger)' : 'var(--accent)';
+            
+            // Update recent vehicles list
+            vehicleListEl.innerHTML = '';
+            if (cars.length === 0) {
+                const item = document.createElement('div');
+                item.className = 'vehicle-item';
+                item.textContent = 'No vehicles currently';
+                vehicleListEl.appendChild(item);
+            } else {
+                // Show up to 5 most recent vehicles
+                cars.slice(-5).reverse().forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'vehicle-item';
+                    if(c.isEmergency) item.classList.add('emergency'); // Add class for emergency styling if needed
+                    const colorCircle = `<div class="vehicle-color" style="background-color:${c.color}"></div>`;
+                    const details = `<div>${c.type} from <b>${c.from}</b> to <b>${c.route}</b> (State: ${c.state})</div>`;
+                    item.innerHTML = `${colorCircle}${details}`;
+                    vehicleListEl.appendChild(item);
+                });
+            }
+        }
+        
+        /* ===== Main loop ===== */
+        let last = performance.now();
+        function loop(now) {
+            const dt = Math.min(0.05, (now - last) / 1000); // Limit dt to prevent large jumps
+            last = now;
+            
+            if (running) {
+                updateSignals(dt);
+                updateCars(dt);
+            }
+            drawScene();
+            updateDashboard();
+            
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop); // Start the animation loop
+
+        /* ===== Controls ===== */
+        document.getElementById('startBtn').addEventListener('click', e => {
+            running = true;
+            e.currentTarget.disabled = true;
+            e.currentTarget.textContent = 'Running';
+            e.currentTarget.classList.remove('primary');
+            simulationStartTime = Date.now(); // Reset simulation start time
+        });
+        document.getElementById('addBtn').addEventListener('click', () => spawnVehicle(false));
+        document.getElementById('addEmergencyBtn').addEventListener('click', () => spawnVehicle(true));
+        document.getElementById('removeBtn').addEventListener('click', () => removeLast());
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            cars.length = 0;
+            occ.clear();
+            vehiclesPassed = 0;
+            totalWaitTime = 0;
+            completedVehicles = 0;
+            updateDashboard();
+        });
+        document.getElementById('emgBtn').addEventListener('click', e => {
+            emergency = !emergency;
+            e.currentTarget.textContent = emergency ? 'Resume Signals' : 'Emergency All-Red';
+            document.getElementById('emergencyModeStatus').textContent = emergency ? 'Active' : 'Inactive';
+        });
+    </script>
+</body>
+</html> 

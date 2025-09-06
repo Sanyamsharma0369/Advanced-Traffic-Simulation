@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend/traffic-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # Backend API service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=traffic_control
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=traffic_token
+      - INFLUXDB_ORG=traffic_org
+      - INFLUXDB_BUCKET=traffic_metrics
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+    volumes:
+      - ./backend:/app
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # ML service for traffic prediction and optimization
+  ml-service:
+    build:
+      context: ./backend/ml
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+      - postgres
+      - influxdb
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=traffic_control
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=traffic_token
+      - INFLUXDB_ORG=traffic_org
+      - INFLUXDB_BUCKET=traffic_metrics
+    volumes:
+      - ./backend/ml:/app
+      - ml-models:/app/models
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # MQTT broker for IoT communication
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto:/mosquitto/config
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # PostgreSQL database for relational data
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=traffic_control
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # InfluxDB for time-series data
+  influxdb:
+    image: influxdb:2.0
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=traffic_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=traffic_metrics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=traffic_token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # Redis for caching and pub/sub
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+  # Grafana for additional visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+      - postgres
+    networks:
+      - traffic-network
+    restart: unless-stopped
+
+networks:
+  traffic-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  influxdb-data:
+  redis-data:
+  mosquitto-data:
+  mosquitto-log:
+  ml-models:
+  grafana-data:
