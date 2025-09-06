@@ -8,13 +8,13 @@
  1. **Clone the Repository**  
     Run the following command to clone the repository to your local system:
     ```bash
-    git clone https://github.com/your-repo-url.git
+    git clone https://github.com/Sanyamsharma0369/Advanced-Traffic-Simulation.git
     ```
  
  2. **Navigate to the Directory**  
     Change into the cloned repository's directory:
     ```bash
-    cd your-repo-name
+    cd Advanced-Traffic-Simulation
     ```
  
  3. **Install Dependencies**  
